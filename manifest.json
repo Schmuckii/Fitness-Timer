@@ -1,0 +1,18 @@
+{
+  "name": "Fitness Timer",
+  "short_name": "FitTimer",
+  "description": "Plan and run workout timers with exercises, sets, and rest intervals.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#07070e",
+  "theme_color": "#07070e",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

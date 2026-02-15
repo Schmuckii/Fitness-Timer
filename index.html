@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Fitness Timer</title>
+  <meta name="description" content="A sleek fitness workout timer to plan exercises with set and rest intervals." />
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#07070e" />
+  <!-- iOS -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="FitTimer" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <!-- Fonts & Styles -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <!-- ═══════════════ HOME SCREEN ═══════════════ -->
+  <div id="home-screen" class="screen active">
+    <header class="app-header">
+      <h1 class="logo">⏱ Fitness Timer</h1>
+      <button id="lang-toggle" class="btn-icon" title="Sprache / Language" aria-label="Toggle language">
+        <span id="lang-label">DE</span>
+      </button>
+    </header>
+
+    <main class="home-content">
+      <div class="home-title-row">
+        <h2 data-i18n="myWorkouts">My Workouts</h2>
+        <button id="create-workout-btn" class="btn btn-accent" data-i18n="newWorkout">+ New Workout</button>
+      </div>
+
+      <div id="workout-grid" class="workout-grid"></div>
+      <p id="no-workouts-msg" class="empty-msg" data-i18n="noWorkouts">No workouts yet. Create your first one!</p>
+    </main>
+  </div>
+
+  <!-- ═══════════════ EDITOR SCREEN ═══════════════ -->
+  <div id="editor-screen" class="screen">
+    <header class="app-header">
+      <button id="editor-back-btn" class="btn-icon" title="Back">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
+      <h1 class="header-title" id="editor-header-title" data-i18n="editWorkout">Edit Workout</h1>
+      <button id="delete-workout-btn" class="btn-icon btn-icon-danger" title="Delete workout">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+          <path d="M10 11v6"></path>
+          <path d="M14 11v6"></path>
+          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+        </svg>
+      </button>
+    </header>
+
+    <main class="editor-content">
+      <!-- Workout Name -->
+      <section class="card glass">
+        <label for="workout-name" class="field-label" data-i18n="workoutName">Workout Name</label>
+        <input type="text" id="workout-name" class="input-full" placeholder="e.g. Full Body"
+          data-i18n-placeholder="workoutNamePlaceholder" />
+      </section>
+
+      <!-- Exercises -->
+      <section class="card glass" id="exercises-card">
+        <div class="card-header">
+          <h2 data-i18n="exercises">Exercises</h2>
+          <button id="add-exercise-btn" class="btn btn-accent btn-sm" data-i18n="addExercise">+ Add Exercise</button>
+        </div>
+        <ul id="exercise-list" class="exercise-list"></ul>
+        <p id="no-exercises-msg" class="empty-msg" data-i18n="noExercises">No exercises yet. Add one to get started!</p>
+      </section>
+
+      <!-- Total Duration (auto-calculated) -->
+      <div class="total-duration-bar glass" id="total-duration-bar">
+        <span data-i18n="totalDuration">Total Duration</span>
+        <span id="calc-duration" class="calc-duration">0:00</span>
+      </div>
+
+      <!-- Save & Start -->
+      <div class="editor-actions">
+        <button id="save-workout-btn" class="btn btn-outline btn-full" data-i18n="saveWorkout">💾 Save Workout</button>
+        <button id="start-btn" class="btn btn-start" data-i18n="startWorkout">Start Workout 🚀</button>
+      </div>
+    </main>
+  </div>
+
+  <!-- ═══════════════ TIMER SCREEN ═══════════════ -->
+  <div id="timer-screen" class="screen">
+    <div class="timer-layout">
+      <div class="timer-top-bar">
+        <button id="timer-back-btn" class="btn-icon" data-i18n-title="backToSetup" title="Back to Setup">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+        <span id="timer-workout-name" class="timer-workout-name"></span>
+        <span id="timer-total-remaining" class="total-remaining">00:00</span>
+      </div>
+
+      <div class="timer-ring-container">
+        <svg class="timer-ring" viewBox="0 0 260 260">
+          <circle class="timer-ring-bg" cx="130" cy="130" r="120" />
+          <circle id="timer-ring-progress" class="timer-ring-progress" cx="130" cy="130" r="120" />
+        </svg>
+        <div class="timer-center">
+          <span id="timer-phase-label" class="phase-label" data-i18n="getReady">Get Ready</span>
+          <span id="timer-countdown" class="countdown">00:00</span>
+          <span id="timer-exercise-name" class="exercise-name"></span>
+          <span id="timer-set-counter" class="set-counter"></span>
+        </div>
+      </div>
+
+      <div class="timer-controls">
+        <button id="pause-btn" class="btn btn-control btn-accent" data-i18n="pause">Pause</button>
+        <button id="skip-btn" class="btn btn-control btn-outline" data-i18n="skip">Skip</button>
+      </div>
+
+      <div class="up-next glass" id="up-next-section">
+        <span class="up-next-label" data-i18n="upNext">Up Next</span>
+        <span id="up-next-name" class="up-next-name">—</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ EXERCISE MODAL ═══════════════ -->
+  <div id="exercise-modal" class="modal-overlay" hidden>
+    <div class="modal glass">
+      <h3 id="modal-title" data-i18n="addExercise">Add Exercise</h3>
+      <div class="modal-field">
+        <label for="ex-name" data-i18n="exerciseName">Exercise Name</label>
+        <input type="text" id="ex-name" placeholder="e.g. Push-ups" data-i18n-placeholder="exercisePlaceholder" />
+      </div>
+      <div class="modal-row">
+        <div class="modal-field">
+          <label for="ex-sets" data-i18n="setsCount">Sets</label>
+          <input type="number" id="ex-sets" min="1" max="99" value="3" />
+        </div>
+        <div class="modal-field">
+          <label for="ex-set-duration" data-i18n="setDuration">Set Duration (sec)</label>
+          <input type="number" id="ex-set-duration" min="1" max="600" value="40" />
+        </div>
+        <div class="modal-field">
+          <label for="ex-rest-duration" data-i18n="restDuration">Rest Duration (sec)</label>
+          <input type="number" id="ex-rest-duration" min="0" max="600" value="20" />
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button id="modal-cancel" class="btn btn-outline" data-i18n="cancel">Cancel</button>
+        <button id="modal-save" class="btn btn-accent" data-i18n="save">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ DONE SCREEN ═══════════════ -->
+  <div id="done-screen" class="screen">
+    <div class="done-content">
+      <div class="done-icon">🏆</div>
+      <h2 data-i18n="workoutComplete">Workout Complete!</h2>
+      <p id="done-summary" class="done-summary"></p>
+      <button id="done-btn" class="btn btn-start" data-i18n="backHome">Back to Home</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js');
+    }
+  </script>
+</body>
+
+</html>
