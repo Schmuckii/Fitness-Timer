@@ -50,6 +50,19 @@ const i18n = {
         workoutDetail: "Workout Detail",
         close: "Close",
         deleteHistoryConfirm: "Delete this history entry?",
+        likeWorkout: "Like",
+        unlikeWorkout: "Unlike",
+        exportWorkouts: "Export",
+        importWorkouts: "Import",
+        selectWorkouts: "Select",
+        exportSelected: "Export Selected",
+        cancelSelection: "Cancel",
+        noWorkoutsSelected: "Please select at least one workout.",
+        importSuccess: (n) => `${n} workout${n !== 1 ? "s" : ""} imported successfully!`,
+        importError: "Could not read the file. Please check the format.",
+        importPreviewTitle: "Import Workouts",
+        importConfirm: "Import",
+        duplicateWarning: "(already exists)",
         weekdaysShort: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
         monthNames: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
         setOf: (cur, total) => `Set ${cur}/${total}`,
@@ -108,6 +121,19 @@ const i18n = {
         workoutDetail: "Workout-Detail",
         close: "Schließen",
         deleteHistoryConfirm: "Diesen Verlaufseintrag löschen?",
+        likeWorkout: "Gefällt mir",
+        unlikeWorkout: "Gefällt mir nicht mehr",
+        exportWorkouts: "Exportieren",
+        importWorkouts: "Importieren",
+        selectWorkouts: "Auswählen",
+        exportSelected: "Auswahl exportieren",
+        cancelSelection: "Abbrechen",
+        noWorkoutsSelected: "Bitte wähle mindestens ein Workout aus.",
+        importSuccess: (n) => `${n} Workout${n !== 1 ? "s" : ""} erfolgreich importiert!`,
+        importError: "Datei konnte nicht gelesen werden. Bitte Format prüfen.",
+        importPreviewTitle: "Workouts importieren",
+        importConfirm: "Importieren",
+        duplicateWarning: "(existiert bereits)",
         weekdaysShort: ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"],
         monthNames: ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"],
         setOf: (cur, total) => `Satz ${cur}/${total}`,
@@ -152,6 +178,9 @@ let workouts = [];          // Array of { id, name, exercises: [{name, sets, set
 let currentWorkout = null;  // The workout currently being edited / run
 let editingExIndex = -1;    // Index of exercise being edited in modal
 let isNewWorkout = false;
+let likedWorkouts = new Set(); // Set of liked workout IDs
+let selectionMode = false;     // Whether multi-select mode is active
+let selectedWorkouts = new Set(); // Set of selected workout IDs for export
 
 const CARD_COLORS = [
     "#00e5ff", "#00e676", "#ff9100", "#e040fb",
@@ -208,6 +237,31 @@ function generateId() {
 }
 
 /* ═══════════════════════════════════════════
+   LIKED WORKOUTS PERSISTENCE
+   ═══════════════════════════════════════════ */
+function saveLiked() {
+    localStorage.setItem("fitLikedWorkouts", JSON.stringify([...likedWorkouts]));
+}
+
+function loadLiked() {
+    try {
+        const data = JSON.parse(localStorage.getItem("fitLikedWorkouts"));
+        if (Array.isArray(data)) likedWorkouts = new Set(data);
+    } catch (_) { /* ignore */ }
+}
+
+function toggleLike(workoutId, e) {
+    e.stopPropagation();
+    if (likedWorkouts.has(workoutId)) {
+        likedWorkouts.delete(workoutId);
+    } else {
+        likedWorkouts.add(workoutId);
+    }
+    saveLiked();
+    renderWorkouts();
+}
+
+/* ═══════════════════════════════════════════
    WORKOUT HISTORY PERSISTENCE
    ═══════════════════════════════════════════ */
 let workoutHistory = [];
@@ -250,21 +304,56 @@ function renderWorkouts() {
     workoutGrid.innerHTML = "";
     noWorkoutsMsg.style.display = workouts.length ? "none" : "block";
 
-    workouts.forEach((w, i) => {
+    // Sort: liked workouts first
+    const sorted = [...workouts].sort((a, b) => {
+        const aLiked = likedWorkouts.has(a.id) ? 1 : 0;
+        const bLiked = likedWorkouts.has(b.id) ? 1 : 0;
+        return bLiked - aLiked;
+    });
+
+    sorted.forEach((w, i) => {
         const totalSec = calcTotalDuration(w.exercises);
+        const isLiked = likedWorkouts.has(w.id);
+        const isSelected = selectedWorkouts.has(w.id);
         const card = document.createElement("div");
         card.className = "workout-card glass";
+        if (isSelected) card.classList.add("selected");
         card.style.setProperty("--card-accent", getColor(i));
         card.innerHTML = `
       <style>.workout-card:nth-child(${i + 1})::before { background: ${getColor(i)}; }</style>
+      ${selectionMode ? `<div class="workout-card-checkbox ${isSelected ? 'checked' : ''}" data-id="${w.id}">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      </div>` : ''}
+      <button class="workout-card-like ${isLiked ? 'liked' : ''}" data-id="${w.id}" title="${isLiked ? t('unlikeWorkout') : t('likeWorkout')}">
+        <svg viewBox="0 0 24 24" width="20" height="20">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+            fill="${isLiked ? 'var(--accent-red)' : 'none'}" stroke="${isLiked ? 'var(--accent-red)' : 'currentColor'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
       <div class="workout-card-name">${escapeHtml(w.name)}</div>
       <div class="workout-card-meta">
         <span>🏋️ ${t("exerciseCount")(w.exercises.length)}</span>
         <span>⏱ ${formatTime(totalSec)}</span>
       </div>`;
-        card.addEventListener("click", () => openEditor(w.id));
+        card.addEventListener("click", (e) => {
+            if (selectionMode) {
+                toggleSelection(w.id);
+                return;
+            }
+            openEditor(w.id);
+        });
+        // Like button handler
+        card.querySelector('.workout-card-like').addEventListener('click', (e) => toggleLike(w.id, e));
+        // Checkbox handler
+        const cb = card.querySelector('.workout-card-checkbox');
+        if (cb) cb.addEventListener('click', (e) => { e.stopPropagation(); toggleSelection(w.id); });
         workoutGrid.appendChild(card);
     });
+
+    // Update selection bar visibility
+    updateSelectionBar();
 }
 
 /* ═══════════════════════════════════════════
@@ -945,11 +1034,173 @@ function openDayDetail(dateStr) {
 }
 
 /* ═══════════════════════════════════════════
+   SELECTION MODE & EXPORT/IMPORT
+   ═══════════════════════════════════════════ */
+function enterSelectionMode() {
+    selectionMode = true;
+    selectedWorkouts.clear();
+    renderWorkouts();
+}
+
+function exitSelectionMode() {
+    selectionMode = false;
+    selectedWorkouts.clear();
+    renderWorkouts();
+}
+
+function toggleSelection(workoutId) {
+    if (selectedWorkouts.has(workoutId)) {
+        selectedWorkouts.delete(workoutId);
+    } else {
+        selectedWorkouts.add(workoutId);
+    }
+    renderWorkouts();
+}
+
+function updateSelectionBar() {
+    const bar = $("selection-bar");
+    if (!bar) return;
+    if (selectionMode && selectedWorkouts.size > 0) {
+        bar.hidden = false;
+        $("selection-count").textContent = selectedWorkouts.size;
+    } else {
+        bar.hidden = true;
+    }
+    // Toggle header buttons visibility
+    const selectBtn = $("select-btn");
+    const cancelSelectBtn = $("cancel-select-btn");
+    if (selectBtn) selectBtn.style.display = selectionMode ? "none" : "";
+    if (cancelSelectBtn) cancelSelectBtn.style.display = selectionMode ? "" : "none";
+}
+
+function exportSelectedWorkouts() {
+    if (selectedWorkouts.size === 0) {
+        alert(t("noWorkoutsSelected"));
+        return;
+    }
+    const selected = workouts.filter(w => selectedWorkouts.has(w.id));
+    // Clean export: remove IDs, just keep workout data
+    const exportData = selected.map(w => ({
+        name: w.name,
+        exercises: w.exercises.map(ex => ({
+            name: ex.name,
+            sets: ex.sets || 1,
+            setDuration: ex.setDuration,
+            restDuration: ex.restDuration,
+            trackReps: ex.trackReps || false,
+            reps: ex.reps || 0,
+        })),
+    }));
+
+    const json = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const dateStr = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `fitness-workouts-${dateStr}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    exitSelectionMode();
+}
+
+function triggerImport() {
+    $("import-file-input").click();
+}
+
+function handleImportFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+        try {
+            const data = JSON.parse(evt.target.result);
+            if (!Array.isArray(data)) throw new Error("Not an array");
+            showImportPreview(data);
+        } catch (_) {
+            alert(t("importError"));
+        }
+    };
+    reader.readAsText(file);
+    // Reset input so same file can be re-imported
+    e.target.value = "";
+}
+
+function showImportPreview(data) {
+    const importModal = $("import-modal");
+    const list = $("import-preview-list");
+    list.innerHTML = "";
+
+    data.forEach((w, i) => {
+        const isDuplicate = workouts.some(existing => existing.name.toLowerCase() === w.name.toLowerCase());
+        const li = document.createElement("li");
+        li.className = "import-preview-item";
+        li.innerHTML = `
+            <span class="import-preview-name">${escapeHtml(w.name)}</span>
+            <span class="import-preview-meta">${w.exercises ? w.exercises.length : 0} ${currentLang === "de" ? "Übungen" : "exercises"}${isDuplicate ? ` <span class="import-duplicate">${t("duplicateWarning")}</span>` : ""}</span>
+        `;
+        list.appendChild(li);
+    });
+
+    $("import-modal-title").textContent = t("importPreviewTitle");
+    $("import-confirm-btn").textContent = t("importConfirm");
+    $("import-cancel-btn").textContent = t("cancel");
+    importModal._pendingData = data;
+    importModal.hidden = false;
+}
+
+function confirmImport() {
+    const importModal = $("import-modal");
+    const data = importModal._pendingData;
+    if (!data) return;
+
+    let count = 0;
+    data.forEach(w => {
+        if (w.name && Array.isArray(w.exercises)) {
+            const newWorkout = {
+                id: generateId(),
+                name: w.name,
+                exercises: w.exercises.map(ex => ({
+                    name: ex.name || "",
+                    sets: ex.sets || 1,
+                    setDuration: ex.setDuration || 30,
+                    restDuration: ex.restDuration || 15,
+                    trackReps: ex.trackReps || false,
+                    reps: ex.reps || 0,
+                })),
+            };
+            workouts.push(newWorkout);
+            count++;
+        }
+    });
+
+    saveWorkouts();
+    renderWorkouts();
+    importModal.hidden = true;
+    importModal._pendingData = null;
+
+    if (count > 0) {
+        alert(t("importSuccess")(count));
+    }
+}
+
+function closeImportModal() {
+    const importModal = $("import-modal");
+    importModal.hidden = true;
+    importModal._pendingData = null;
+}
+
+/* ═══════════════════════════════════════════
    EVENT LISTENERS
    ═══════════════════════════════════════════ */
 document.addEventListener("DOMContentLoaded", () => {
     loadWorkouts();
     loadHistory();
+    loadLiked();
     renderWorkouts();
     applyI18n();
 
@@ -967,6 +1218,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Home – open calendar
     $("calendar-btn").addEventListener("click", openCalendar);
+
+    // Home – select mode
+    $("select-btn").addEventListener("click", enterSelectionMode);
+    $("cancel-select-btn").addEventListener("click", exitSelectionMode);
+
+    // Home – import
+    $("import-btn").addEventListener("click", triggerImport);
+    $("import-file-input").addEventListener("change", handleImportFile);
+
+    // Selection bar – export
+    $("export-selected-btn").addEventListener("click", exportSelectedWorkouts);
+
+    // Import modal
+    $("import-confirm-btn").addEventListener("click", confirmImport);
+    $("import-cancel-btn").addEventListener("click", closeImportModal);
+    $("import-modal").addEventListener("click", (e) => {
+        if (e.target === $("import-modal")) closeImportModal();
+    });
 
     // Calendar – back to home
     $("calendar-back-btn").addEventListener("click", () => {

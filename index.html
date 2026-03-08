@@ -28,6 +28,9 @@
     <header class="app-header">
       <h1 class="logo">⏱ Fitness Timer</h1>
       <div class="header-actions">
+        <button id="import-btn" class="btn-icon" title="Import" aria-label="Import workouts">
+          <span>📥</span>
+        </button>
         <button id="calendar-btn" class="btn-icon" title="Calendar" aria-label="Workout Calendar">
           <span>📅</span>
         </button>
@@ -40,11 +43,21 @@
     <main class="home-content">
       <div class="home-title-row">
         <h2 data-i18n="myWorkouts">My Workouts</h2>
-        <button id="create-workout-btn" class="btn btn-accent" data-i18n="newWorkout">+ New Workout</button>
+        <div class="home-title-actions">
+          <button id="select-btn" class="btn btn-outline btn-sm" data-i18n="selectWorkouts">Select</button>
+          <button id="cancel-select-btn" class="btn btn-outline btn-sm" style="display:none" data-i18n="cancelSelection">Cancel</button>
+          <button id="create-workout-btn" class="btn btn-accent" data-i18n="newWorkout">+ New Workout</button>
+        </div>
       </div>
 
       <div id="workout-grid" class="workout-grid"></div>
       <p id="no-workouts-msg" class="empty-msg" data-i18n="noWorkouts">No workouts yet. Create your first one!</p>
+
+      <!-- Selection Action Bar -->
+      <div id="selection-bar" class="selection-bar glass" hidden>
+        <span class="selection-bar-text"><span id="selection-count">0</span> selected</span>
+        <button id="export-selected-btn" class="btn btn-accent btn-sm" data-i18n="exportSelected">Export Selected</button>
+      </div>
     </main>
   </div>
 
@@ -258,6 +271,21 @@
 
       <div id="calendar-detail" class="calendar-detail"></div>
     </main>
+  </div>
+
+  <!-- Hidden file input for import -->
+  <input type="file" id="import-file-input" accept=".json" style="display:none" />
+
+  <!-- ═══════════════ IMPORT PREVIEW MODAL ═══════════════ -->
+  <div id="import-modal" class="modal-overlay" hidden>
+    <div class="modal glass import-modal">
+      <h3 id="import-modal-title">Import Workouts</h3>
+      <ul id="import-preview-list" class="import-preview-list"></ul>
+      <div class="modal-actions">
+        <button id="import-cancel-btn" class="btn btn-outline">Cancel</button>
+        <button id="import-confirm-btn" class="btn btn-accent">Import</button>
+      </div>
+    </div>
   </div>
 
   <script src="app.js"></script>

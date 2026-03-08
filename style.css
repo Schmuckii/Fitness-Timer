@@ -1312,4 +1312,215 @@ input[type="number"]::-webkit-outer-spin-button {
         height: 4px;
         bottom: 2px;
     }
+
+    .home-title-row {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .home-title-actions {
+        gap: 0.4rem;
+    }
+
+    .selection-bar {
+        padding: 0.75rem 1rem;
+    }
+}
+
+/* ═══════════════════════════════════════════
+   HOME TITLE ACTIONS
+   ═══════════════════════════════════════════ */
+.home-title-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* ═══════════════════════════════════════════
+   LIKE / HEART BUTTON
+   ═══════════════════════════════════════════ */
+.workout-card {
+    position: relative;
+}
+
+.workout-card-like {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all var(--transition);
+    z-index: 2;
+    padding: 0;
+    backdrop-filter: blur(8px);
+}
+
+.workout-card-like:hover {
+    background: rgba(255, 82, 82, 0.15);
+    border-color: rgba(255, 82, 82, 0.3);
+    color: var(--accent-red);
+    transform: scale(1.1);
+}
+
+.workout-card-like.liked {
+    background: rgba(255, 82, 82, 0.15);
+    border-color: rgba(255, 82, 82, 0.3);
+    animation: heartPop 0.4s ease;
+}
+
+@keyframes heartPop {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.3); }
+    60% { transform: scale(0.9); }
+    100% { transform: scale(1); }
+}
+
+.workout-card-like svg {
+    width: 18px;
+    height: 18px;
+    transition: all var(--transition);
+}
+
+/* ═══════════════════════════════════════════
+   SELECTION MODE – CHECKBOXES
+   ═══════════════════════════════════════════ */
+.workout-card-checkbox {
+    position: absolute;
+    top: 0.6rem;
+    left: 0.6rem;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    border: 2px solid var(--glass-border);
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 2;
+    transition: all var(--transition);
+}
+
+.workout-card-checkbox svg {
+    opacity: 0;
+    transition: opacity var(--transition);
+    color: #000;
+}
+
+.workout-card-checkbox.checked {
+    background: linear-gradient(135deg, var(--accent-cyan), #00b0d4);
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 12px var(--accent-cyan-glow);
+}
+
+.workout-card-checkbox.checked svg {
+    opacity: 1;
+}
+
+.workout-card-checkbox:hover {
+    border-color: var(--accent-cyan);
+    background: rgba(0, 229, 255, 0.1);
+}
+
+.workout-card.selected {
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 16px var(--accent-cyan-glow), var(--glass-shadow);
+}
+
+/* ═══════════════════════════════════════════
+   SELECTION ACTION BAR
+   ═══════════════════════════════════════════ */
+.selection-bar {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.85rem 1.5rem;
+    z-index: 150;
+    animation: slideUp 0.3s ease;
+    min-width: 260px;
+    justify-content: space-between;
+}
+
+.selection-bar[hidden] {
+    display: none;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+.selection-bar-text {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.selection-bar-text span {
+    color: var(--accent-cyan);
+    font-weight: 700;
+}
+
+/* ═══════════════════════════════════════════
+   IMPORT PREVIEW MODAL
+   ═══════════════════════════════════════════ */
+.import-modal {
+    max-width: 420px;
+}
+
+.import-preview-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.import-preview-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    animation: slideIn 0.2s ease;
+}
+
+.import-preview-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+}
+
+.import-preview-meta {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.import-duplicate {
+    color: var(--accent-orange);
+    font-weight: 600;
+    font-size: 0.75rem;
 }
