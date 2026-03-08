@@ -649,7 +649,30 @@ input[type="number"]::-webkit-outer-spin-button {
     gap: 0.75rem;
     width: 100%;
     max-width: 400px;
+    margin-bottom: 0.75rem;
+}
+
+.timer-controls-secondary {
+    display: flex;
+    gap: 0.75rem;
+    width: 100%;
+    max-width: 400px;
     margin-bottom: 1.5rem;
+}
+
+.btn-control-sm {
+    flex: 1;
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+    border-radius: var(--radius);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+}
+
+.btn-control-sm svg {
+    flex-shrink: 0;
 }
 
 .up-next {
@@ -815,12 +838,451 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 /* ═══════════════════════════════════════════
+   TOGGLE SWITCH
+   ═══════════════════════════════════════════ */
+.modal-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    padding: 0.5rem 0;
+}
+
+.modal-toggle-row>label:first-child {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 48px;
+    height: 26px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 26px;
+    border: 1px solid var(--glass-border);
+    transition: all var(--transition);
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    left: 3px;
+    bottom: 2px;
+    background: var(--text-secondary);
+    border-radius: 50%;
+    transition: all var(--transition);
+}
+
+.toggle-switch input:checked+.toggle-slider {
+    background: linear-gradient(135deg, var(--accent-cyan), #00b0d4);
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 12px var(--accent-cyan-glow);
+}
+
+.toggle-switch input:checked+.toggle-slider::before {
+    transform: translateX(21px);
+    background: #000;
+}
+
+/* ═══════════════════════════════════════════
+   REPS CONFIRMATION MODAL
+   ═══════════════════════════════════════════ */
+.reps-confirm-modal {
+    text-align: center;
+}
+
+.reps-exercise-name {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+    font-weight: 500;
+}
+
+.reps-counter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.25rem;
+    margin-bottom: 1.75rem;
+}
+
+.btn-reps-adjust {
+    width: 56px;
+    height: 56px;
+    border-radius: 50% !important;
+    font-size: 1.8rem;
+    font-weight: 700;
+    padding: 0 !important;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-primary);
+    border: 1px solid var(--glass-border) !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition);
+    line-height: 1;
+}
+
+.btn-reps-adjust:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: var(--accent-cyan) !important;
+    box-shadow: 0 0 16px var(--accent-cyan-glow);
+    transform: scale(1.08);
+}
+
+.btn-reps-adjust:active {
+    transform: scale(0.95);
+}
+
+.reps-display {
+    display: flex;
+    align-items: baseline;
+    gap: 0.3rem;
+    min-width: 120px;
+    justify-content: center;
+}
+
+.reps-current {
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--accent-cyan);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+
+.reps-separator {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin: 0 0.15rem;
+}
+
+.reps-target {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.reps-confirm-btn {
+    max-width: 280px;
+    margin: 0 auto;
+}
+
+/* ═══════════════════════════════════════════
+   REPS SUMMARY (DONE SCREEN)
+   ═══════════════════════════════════════════ */
+.reps-summary {
+    width: 100%;
+    max-width: 360px;
+    margin-bottom: 1.5rem;
+}
+
+.reps-summary:empty {
+    display: none;
+}
+
+.reps-summary-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-bottom: 0.75rem;
+}
+
+.reps-summary-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.reps-summary-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.6rem 0.85rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+}
+
+.reps-summary-item .reps-ex-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    flex: 1;
+    text-align: left;
+}
+
+.reps-summary-item .reps-set-label {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    margin-right: 0.75rem;
+}
+
+.reps-summary-item .reps-result {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent-green);
+}
+
+.reps-summary-item .reps-result.partial {
+    color: var(--accent-orange);
+}
+
+/* ═══════════════════════════════════════════
+   HEADER ACTIONS
+   ═══════════════════════════════════════════ */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* ═══════════════════════════════════════════
+   CALENDAR SCREEN
+   ═══════════════════════════════════════════ */
+.calendar-content {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 1.25rem 1rem 2rem;
+}
+
+.calendar-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 0.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.calendar-arrow {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--glass-border);
+}
+
+.calendar-arrow:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 12px var(--accent-cyan-glow);
+}
+
+.calendar-month-label {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+}
+
+/* Weekdays */
+.calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0;
+    margin-bottom: 0.25rem;
+}
+
+.calendar-weekday {
+    text-align: center;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    padding: 0.5rem 0;
+}
+
+/* Day Grid */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    margin-bottom: 1.5rem;
+}
+
+.calendar-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition);
+    position: relative;
+    user-select: none;
+}
+
+.calendar-day:not(.empty):hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+    transform: scale(1.08);
+}
+
+.calendar-day:not(.empty):active {
+    transform: scale(0.95);
+}
+
+.calendar-day.empty {
+    cursor: default;
+}
+
+.calendar-day.today {
+    color: var(--text-primary);
+    font-weight: 700;
+    border: 2px solid var(--accent-cyan);
+    box-shadow: 0 0 8px var(--accent-cyan-glow);
+}
+
+.calendar-day.has-workout {
+    background: rgba(0, 230, 118, 0.12);
+    color: var(--accent-green);
+    font-weight: 700;
+}
+
+.calendar-day.has-workout::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-green);
+    box-shadow: 0 0 6px var(--accent-green-glow);
+}
+
+.calendar-day.has-workout:hover {
+    background: rgba(0, 230, 118, 0.2);
+}
+
+.calendar-day.today.has-workout {
+    background: rgba(0, 230, 118, 0.15);
+    border-color: var(--accent-green);
+    box-shadow: 0 0 12px var(--accent-green-glow);
+}
+
+/* Calendar Detail */
+.calendar-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    animation: fadeIn 0.3s ease;
+}
+
+.history-card {
+    padding: 1.25rem;
+    animation: slideIn 0.3s ease;
+}
+
+.history-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+}
+
+.history-card-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    background: linear-gradient(135deg, var(--accent-cyan), var(--accent-green));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.history-delete-btn {
+    width: 32px !important;
+    height: 32px !important;
+}
+
+.history-card-meta {
+    display: flex;
+    gap: 1.25rem;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.history-exercise-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-bottom: 0.5rem;
+}
+
+.history-exercise-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 0.6rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    font-size: 0.85rem;
+}
+
+.history-exercise-item .ex-color {
+    width: 4px;
+    height: 24px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.history-ex-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    flex: 1;
+}
+
+.history-ex-meta {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.history-reps {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--glass-border);
+}
+
+/* ═══════════════════════════════════════════
    RESPONSIVE
    ═══════════════════════════════════════════ */
 @media (max-width: 480px) {
 
     .home-content,
-    .editor-content {
+    .editor-content,
+    .calendar-content {
         padding: 1rem 0.75rem 2rem;
     }
 
@@ -839,5 +1301,15 @@ input[type="number"]::-webkit-outer-spin-button {
 
     .workout-grid {
         grid-template-columns: 1fr;
+    }
+
+    .calendar-day {
+        font-size: 0.8rem;
+    }
+
+    .calendar-day.has-workout::after {
+        width: 4px;
+        height: 4px;
+        bottom: 2px;
     }
 }

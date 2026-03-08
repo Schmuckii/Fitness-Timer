@@ -27,9 +27,14 @@
   <div id="home-screen" class="screen active">
     <header class="app-header">
       <h1 class="logo">⏱ Fitness Timer</h1>
-      <button id="lang-toggle" class="btn-icon" title="Sprache / Language" aria-label="Toggle language">
-        <span id="lang-label">DE</span>
-      </button>
+      <div class="header-actions">
+        <button id="calendar-btn" class="btn-icon" title="Calendar" aria-label="Workout Calendar">
+          <span>📅</span>
+        </button>
+        <button id="lang-toggle" class="btn-icon" title="Sprache / Language" aria-label="Toggle language">
+          <span id="lang-label">DE</span>
+        </button>
+      </div>
     </header>
 
     <main class="home-content">
@@ -128,6 +133,18 @@
         <button id="pause-btn" class="btn btn-control btn-accent" data-i18n="pause">Pause</button>
         <button id="skip-btn" class="btn btn-control btn-outline" data-i18n="skip">Skip</button>
       </div>
+      <div class="timer-controls-secondary">
+        <button id="rewind-btn" class="btn btn-control-sm btn-outline" title="−10s">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="1 4 1 10 7 10"></polyline>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+          </svg>
+          <span data-i18n="rewind10">−10s</span>
+        </button>
+        <button id="prev-exercise-btn" class="btn btn-control-sm btn-outline" data-i18n="prevExercise">
+          ⏮ Previous Exercise
+        </button>
+      </div>
 
       <div class="up-next glass" id="up-next-section">
         <span class="up-next-label" data-i18n="upNext">Up Next</span>
@@ -158,10 +175,40 @@
           <input type="number" id="ex-rest-duration" min="0" max="600" value="20" />
         </div>
       </div>
+      <!-- Track Reps Toggle -->
+      <div class="modal-toggle-row" id="track-reps-row">
+        <label for="ex-track-reps" data-i18n="trackReps">Track Reps</label>
+        <label class="toggle-switch">
+          <input type="checkbox" id="ex-track-reps" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="modal-field" id="reps-field" style="display:none">
+        <label for="ex-reps" data-i18n="reps">Reps</label>
+        <input type="number" id="ex-reps" min="1" max="999" value="20" />
+      </div>
       <div class="modal-actions">
         <button id="modal-cancel" class="btn btn-outline" data-i18n="cancel">Cancel</button>
         <button id="modal-save" class="btn btn-accent" data-i18n="save">Save</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ REPS CONFIRMATION MODAL ═══════════════ -->
+  <div id="reps-modal" class="modal-overlay" hidden>
+    <div class="modal glass reps-confirm-modal">
+      <h3 id="reps-modal-title" data-i18n="repsConfirmTitle">Reps Completed?</h3>
+      <p id="reps-modal-exercise" class="reps-exercise-name"></p>
+      <div class="reps-counter">
+        <button id="reps-minus" class="btn btn-reps-adjust">−</button>
+        <div class="reps-display">
+          <span id="reps-current" class="reps-current">20</span>
+          <span class="reps-separator">/</span>
+          <span id="reps-target" class="reps-target">20</span>
+        </div>
+        <button id="reps-plus" class="btn btn-reps-adjust">+</button>
+      </div>
+      <button id="reps-confirm-btn" class="btn btn-start reps-confirm-btn" data-i18n="confirmFull">Confirm</button>
     </div>
   </div>
 
@@ -171,8 +218,46 @@
       <div class="done-icon">🏆</div>
       <h2 data-i18n="workoutComplete">Workout Complete!</h2>
       <p id="done-summary" class="done-summary"></p>
+      <div id="reps-summary" class="reps-summary"></div>
       <button id="done-btn" class="btn btn-start" data-i18n="backHome">Back to Home</button>
     </div>
+  </div>
+
+  <!-- ═══════════════ CALENDAR SCREEN ═══════════════ -->
+  <div id="calendar-screen" class="screen">
+    <header class="app-header">
+      <button id="calendar-back-btn" class="btn-icon" title="Back">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
+      <h1 class="header-title" data-i18n="history">History</h1>
+      <div style="width:40px"></div>
+    </header>
+
+    <main class="calendar-content">
+      <div class="calendar-nav glass">
+        <button id="calendar-prev" class="btn-icon calendar-arrow" aria-label="Previous month">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+        <span id="calendar-month-label" class="calendar-month-label">March 2026</span>
+        <button id="calendar-next" class="btn-icon calendar-arrow" aria-label="Next month">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      </div>
+
+      <div id="calendar-weekdays" class="calendar-weekdays"></div>
+      <div id="calendar-grid" class="calendar-grid"></div>
+
+      <div id="calendar-detail" class="calendar-detail"></div>
+    </main>
   </div>
 
   <script src="app.js"></script>

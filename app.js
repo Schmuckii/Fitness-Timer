@@ -36,6 +36,22 @@ const i18n = {
         restLabel: "Rest",
         setsCount: "Sets",
         setsLabel: "Sets",
+        trackReps: "Track Reps",
+        reps: "Reps",
+        repsConfirmTitle: "Reps Completed?",
+        confirmFull: "Confirm",
+        repsSummaryTitle: "Reps Summary",
+        rewind10: "−10s",
+        prevExercise: "⏮ Previous Exercise",
+        calendar: "Calendar",
+        history: "History",
+        noWorkoutsOnDay: "No workouts on this day.",
+        duration: "Duration",
+        workoutDetail: "Workout Detail",
+        close: "Close",
+        deleteHistoryConfirm: "Delete this history entry?",
+        weekdaysShort: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+        monthNames: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
         setOf: (cur, total) => `Set ${cur}/${total}`,
         exerciseCount: (n) => `${n} exercise${n !== 1 ? "s" : ""}`,
         doneSummary: (n) => `You completed ${n} exercise${n !== 1 ? "s" : ""}. Great job! 💪`,
@@ -78,6 +94,22 @@ const i18n = {
         restLabel: "Pause",
         setsCount: "Sätze",
         setsLabel: "Sätze",
+        trackReps: "WDH erfassen",
+        reps: "WDH",
+        repsConfirmTitle: "WDH geschafft?",
+        confirmFull: "Bestätigen",
+        repsSummaryTitle: "WDH Übersicht",
+        rewind10: "−10s",
+        prevExercise: "⏮ Vorherige Übung",
+        calendar: "Kalender",
+        history: "Verlauf",
+        noWorkoutsOnDay: "Keine Workouts an diesem Tag.",
+        duration: "Dauer",
+        workoutDetail: "Workout-Detail",
+        close: "Schließen",
+        deleteHistoryConfirm: "Diesen Verlaufseintrag löschen?",
+        weekdaysShort: ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"],
+        monthNames: ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"],
         setOf: (cur, total) => `Satz ${cur}/${total}`,
         exerciseCount: (n) => `${n} Übung${n !== 1 ? "en" : ""}`,
         doneSummary: (n) => `Du hast ${n} Übung${n !== 1 ? "en" : ""} geschafft. Stark! 💪`,
@@ -139,17 +171,20 @@ const homeScreen = $("home-screen");
 const editorScreen = $("editor-screen");
 const timerScreen = $("timer-screen");
 const doneScreen = $("done-screen");
+const calendarScreen = $("calendar-screen");
 const workoutGrid = $("workout-grid");
 const noWorkoutsMsg = $("no-workouts-msg");
 const exerciseList = $("exercise-list");
 const noExMsg = $("no-exercises-msg");
 const modal = $("exercise-modal");
+const repsModal = $("reps-modal");
+const dayDetailModal = $("day-detail-modal");
 
 /* ═══════════════════════════════════════════
    SCREEN NAVIGATION
    ═══════════════════════════════════════════ */
 function showScreen(screen) {
-    [homeScreen, editorScreen, timerScreen, doneScreen].forEach((s) => s.classList.remove("active"));
+    [homeScreen, editorScreen, timerScreen, doneScreen, calendarScreen].forEach((s) => s.classList.remove("active"));
     screen.classList.add("active");
     window.scrollTo(0, 0);
 }
@@ -170,6 +205,42 @@ function loadWorkouts() {
 
 function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+/* ═══════════════════════════════════════════
+   WORKOUT HISTORY PERSISTENCE
+   ═══════════════════════════════════════════ */
+let workoutHistory = [];
+
+function saveHistory() {
+    localStorage.setItem("fitHistory", JSON.stringify(workoutHistory));
+}
+
+function loadHistory() {
+    try {
+        const data = JSON.parse(localStorage.getItem("fitHistory"));
+        if (Array.isArray(data)) workoutHistory = data;
+    } catch (_) { /* ignore */ }
+}
+
+function saveToHistory() {
+    const entry = {
+        id: generateId(),
+        date: new Date().toISOString(),
+        workoutName: currentWorkout.name,
+        exercises: currentWorkout.exercises.map(ex => ({
+            name: ex.name,
+            sets: ex.sets || 1,
+            setDuration: ex.setDuration,
+            restDuration: ex.restDuration,
+            trackReps: ex.trackReps || false,
+            reps: ex.reps || 0,
+        })),
+        repsLog: [...repsLog],
+        durationSeconds: calcTotalDuration(currentWorkout.exercises),
+    };
+    workoutHistory.push(entry);
+    saveHistory();
 }
 
 /* ═══════════════════════════════════════════
@@ -255,7 +326,7 @@ function renderExercises() {
       <div class="ex-color" style="background:${getColor(i)}"></div>
       <div class="ex-info">
         <div class="ex-name">${escapeHtml(ex.name)}</div>
-        <div class="ex-meta">${ex.sets || 1}× ${t("setLabel")}: ${ex.setDuration}s · ${t("restLabel")}: ${ex.restDuration}s</div>
+        <div class="ex-meta">${ex.sets || 1}× ${t("setLabel")}: ${ex.setDuration}s · ${t("restLabel")}: ${ex.restDuration}s${ex.trackReps ? ` · ${ex.reps} ${t("reps")}` : ""}</div>
       </div>
       <div class="ex-actions">
         <button class="btn-edit" title="Edit" data-index="${i}">✏️</button>
@@ -297,16 +368,25 @@ function openModal(index = -1) {
         $("ex-sets").value = ex.sets || 1;
         $("ex-set-duration").value = ex.setDuration;
         $("ex-rest-duration").value = ex.restDuration;
+        $("ex-track-reps").checked = !!ex.trackReps;
+        $("ex-reps").value = ex.reps || 20;
         $("modal-title").textContent = t("editExercise");
     } else {
         $("ex-name").value = "";
         $("ex-sets").value = 3;
         $("ex-set-duration").value = 40;
         $("ex-rest-duration").value = 20;
+        $("ex-track-reps").checked = false;
+        $("ex-reps").value = 20;
         $("modal-title").textContent = t("addExercise");
     }
+    updateRepsFieldVisibility();
     modal.hidden = false;
     $("ex-name").focus();
+}
+
+function updateRepsFieldVisibility() {
+    $("reps-field").style.display = $("ex-track-reps").checked ? "" : "none";
 }
 
 function closeModal() {
@@ -320,11 +400,14 @@ function saveModal() {
     const sets = Math.max(1, parseInt($("ex-sets").value) || 3);
     const setDur = Math.max(1, parseInt($("ex-set-duration").value) || 40);
     const restDur = Math.max(0, parseInt($("ex-rest-duration").value) || 0);
+    const trackReps = $("ex-track-reps").checked;
+    const reps = Math.max(1, parseInt($("ex-reps").value) || 20);
 
+    const exData = { name, sets, setDuration: setDur, restDuration: restDur, trackReps, reps };
     if (editingExIndex >= 0) {
-        currentWorkout.exercises[editingExIndex] = { name, sets, setDuration: setDur, restDuration: restDur };
+        currentWorkout.exercises[editingExIndex] = exData;
     } else {
-        currentWorkout.exercises.push({ name, sets, setDuration: setDur, restDuration: restDur });
+        currentWorkout.exercises.push(exData);
     }
     renderExercises();
     updateCalcDuration();
@@ -344,6 +427,11 @@ let currentSetNum = 1;      // current set number (1-based)
 let currentPhase = "set";   // "set" | "rest"
 const RING_CIRCUMFERENCE = 2 * Math.PI * 120; // ≈753.98
 
+// Reps tracking state
+let repsLog = [];           // Array of { exercise, set, repsTarget, repsActual }
+let currentRepsCount = 0;   // Current value in the reps dialog
+let pendingRepsTarget = 0;  // Target reps for the current dialog
+
 function startWorkout() {
     if (currentWorkout.exercises.length === 0) {
         alert(t("exerciseRequired"));
@@ -358,6 +446,7 @@ function startWorkout() {
     currentSetNum = 1;
     currentPhase = "set";
     isPaused = false;
+    repsLog = [];
     setPhaseTime(currentWorkout.exercises[0].setDuration);
 
     $("timer-workout-name").textContent = currentWorkout.name;
@@ -399,16 +488,70 @@ function advancePhase() {
     playBeep();
     const ex = currentWorkout.exercises[currentExIndex];
     if (currentPhase === "set") {
-        if (ex.restDuration > 0) {
-            currentPhase = "rest";
-            setPhaseTime(ex.restDuration);
-        } else {
-            advanceSet();
+        // If this exercise tracks reps, show the reps dialog before continuing
+        if (ex.trackReps) {
+            showRepsDialog(ex);
+            return; // Timer stays paused until user confirms reps
         }
+        continueAfterSet();
     } else {
         // rest just finished
         advanceSet();
     }
+}
+
+function continueAfterSet() {
+    const ex = currentWorkout.exercises[currentExIndex];
+    if (ex.restDuration > 0) {
+        currentPhase = "rest";
+        setPhaseTime(ex.restDuration);
+    } else {
+        advanceSet();
+    }
+}
+
+/* ═══════════════════════════════════════════
+   REPS DIALOG
+   ═══════════════════════════════════════════ */
+function showRepsDialog(ex) {
+    // Pause the timer
+    clearInterval(timerInterval);
+    timerInterval = null;
+
+    pendingRepsTarget = ex.reps || 20;
+    currentRepsCount = pendingRepsTarget; // Start at full reps
+
+    $("reps-modal-exercise").textContent = `${ex.name} — ${t("setOf")(currentSetNum, ex.sets || 1)}`;
+    $("reps-current").textContent = currentRepsCount;
+    $("reps-target").textContent = pendingRepsTarget;
+    $("reps-modal-title").textContent = t("repsConfirmTitle");
+    $("reps-confirm-btn").textContent = t("confirmFull");
+
+    repsModal.hidden = false;
+}
+
+function adjustReps(delta) {
+    currentRepsCount = Math.max(0, Math.min(currentRepsCount + delta, 999));
+    $("reps-current").textContent = currentRepsCount;
+}
+
+function confirmReps() {
+    const ex = currentWorkout.exercises[currentExIndex];
+    repsLog.push({
+        exercise: ex.name,
+        set: currentSetNum,
+        repsTarget: pendingRepsTarget,
+        repsActual: currentRepsCount,
+    });
+
+    repsModal.hidden = true;
+
+    // Continue the timer flow
+    continueAfterSet();
+    updateTimerUI();
+
+    // Restart the interval
+    timerInterval = setInterval(tick, 1000);
 }
 
 function advanceSet() {
@@ -443,6 +586,65 @@ function skipPhase() {
     updateTimerUI();
 }
 
+function rewind10() {
+    const addBack = Math.min(10, phaseDuration - phaseTimeRemaining);
+    if (addBack > 0) {
+        phaseTimeRemaining += addBack;
+        totalTimeRemaining += addBack;
+    }
+    updateTimerUI();
+}
+
+function goToPrevExercise() {
+    if (currentWorkout.exercises.length <= 1 && currentSetNum === 1 && currentPhase === "set") return;
+
+    // Calculate how much time remains in the current exercise from the current point
+    const curEx = currentWorkout.exercises[currentExIndex];
+    const curSets = curEx.sets || 1;
+    let timeCurrentPhaseLeft = phaseTimeRemaining;
+
+    // Time for remaining sets/rests in current exercise after current position
+    let timeRemainingInCurEx = timeCurrentPhaseLeft;
+    if (currentPhase === "set") {
+        // Add rest for current set + remaining full sets
+        timeRemainingInCurEx += curEx.restDuration; // rest after this set
+        for (let s = currentSetNum + 1; s <= curSets; s++) {
+            timeRemainingInCurEx += curEx.setDuration + curEx.restDuration;
+        }
+    } else {
+        // In rest phase — add remaining full sets
+        for (let s = currentSetNum + 1; s <= curSets; s++) {
+            timeRemainingInCurEx += curEx.setDuration + curEx.restDuration;
+        }
+    }
+
+    // Determine previous exercise index
+    let prevIdx;
+    if (currentSetNum > 1 || currentPhase !== "set" || phaseTimeRemaining < phaseDuration) {
+        // Go to start of CURRENT exercise
+        prevIdx = currentExIndex;
+    } else {
+        // Already at the start of current exercise, go to previous
+        prevIdx = currentExIndex - 1;
+        if (prevIdx < 0) prevIdx = currentWorkout.exercises.length - 1;
+    }
+
+    const prevEx = currentWorkout.exercises[prevIdx];
+    const prevSets = prevEx.sets || 1;
+    const prevExFullTime = prevSets * (prevEx.setDuration + prevEx.restDuration);
+
+    // Update totalTimeRemaining: subtract what was left in current exercise position, add full prev exercise time
+    totalTimeRemaining = totalTimeRemaining - timeRemainingInCurEx + prevExFullTime;
+    if (totalTimeRemaining < 1) totalTimeRemaining = prevExFullTime;
+
+    // Set state to start of prev exercise
+    currentExIndex = prevIdx;
+    currentSetNum = 1;
+    currentPhase = "set";
+    setPhaseTime(prevEx.setDuration);
+    updateTimerUI();
+}
+
 function togglePause() {
     isPaused = !isPaused;
     $("pause-btn").textContent = isPaused ? t("resume") : t("pause");
@@ -458,10 +660,32 @@ function togglePause() {
 function finishWorkout() {
     clearInterval(timerInterval);
     timerInterval = null;
+    repsModal.hidden = true; // ensure reps dialog is closed
+    saveToHistory();
     const count = currentWorkout.exercises.length;
     $("done-summary").textContent = t("doneSummary")(count);
+    renderRepsSummary();
     applyI18n();
     showScreen(doneScreen);
+}
+
+function renderRepsSummary() {
+    const container = $("reps-summary");
+    if (repsLog.length === 0) {
+        container.innerHTML = "";
+        return;
+    }
+    let html = `<div class="reps-summary-title">${t("repsSummaryTitle")}</div><ul class="reps-summary-list">`;
+    repsLog.forEach((entry) => {
+        const isFull = entry.repsActual >= entry.repsTarget;
+        html += `<li class="reps-summary-item">
+            <span class="reps-ex-name">${escapeHtml(entry.exercise)}</span>
+            <span class="reps-set-label">${t("setLabel")} ${entry.set}</span>
+            <span class="reps-result ${isFull ? "" : "partial"}">${entry.repsActual}/${entry.repsTarget}</span>
+        </li>`;
+    });
+    html += `</ul>`;
+    container.innerHTML = html;
 }
 
 function goBackFromTimer() {
@@ -555,8 +779,177 @@ function playBeep() {
 /* ═══════════════════════════════════════════
    EVENT LISTENERS
    ═══════════════════════════════════════════ */
+/* ═══════════════════════════════════════════
+   CALENDAR SCREEN
+   ═══════════════════════════════════════════ */
+let calendarYear = new Date().getFullYear();
+let calendarMonth = new Date().getMonth(); // 0-based
+
+function openCalendar() {
+    calendarYear = new Date().getFullYear();
+    calendarMonth = new Date().getMonth();
+    renderCalendar();
+    showScreen(calendarScreen);
+}
+
+function renderCalendar() {
+    // Month/Year header
+    const monthNames = t("monthNames");
+    $("calendar-month-label").textContent = `${monthNames[calendarMonth]} ${calendarYear}`;
+
+    // Weekday headers
+    const weekdays = t("weekdaysShort");
+    const weekdayRow = $("calendar-weekdays");
+    weekdayRow.innerHTML = weekdays.map(d => `<span class="calendar-weekday">${d}</span>`).join("");
+
+    // Build days grid
+    const grid = $("calendar-grid");
+    grid.innerHTML = "";
+
+    const firstDay = new Date(calendarYear, calendarMonth, 1);
+    const lastDay = new Date(calendarYear, calendarMonth + 1, 0);
+    const daysInMonth = lastDay.getDate();
+
+    // Monday = 0 adjustment (JS: Sun=0, Mon=1...Sat=6)
+    let startDow = firstDay.getDay() - 1;
+    if (startDow < 0) startDow = 6;
+
+    // Collect dates that have workouts for fast lookup
+    const workoutDates = new Set();
+    workoutHistory.forEach(entry => {
+        const d = new Date(entry.date);
+        if (d.getFullYear() === calendarYear && d.getMonth() === calendarMonth) {
+            workoutDates.add(d.getDate());
+        }
+    });
+
+    const today = new Date();
+    const isCurrentMonth = today.getFullYear() === calendarYear && today.getMonth() === calendarMonth;
+    const todayDate = today.getDate();
+
+    // Empty cells before first day
+    for (let i = 0; i < startDow; i++) {
+        const cell = document.createElement("div");
+        cell.className = "calendar-day empty";
+        grid.appendChild(cell);
+    }
+
+    // Day cells
+    for (let d = 1; d <= daysInMonth; d++) {
+        const cell = document.createElement("div");
+        cell.className = "calendar-day";
+        cell.textContent = d;
+
+        if (isCurrentMonth && d === todayDate) cell.classList.add("today");
+        if (workoutDates.has(d)) {
+            cell.classList.add("has-workout");
+        }
+
+        cell.addEventListener("click", () => {
+            const dateStr = `${calendarYear}-${String(calendarMonth + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+            openDayDetail(dateStr);
+        });
+        grid.appendChild(cell);
+    }
+
+    // Hide detail
+    $("calendar-detail").innerHTML = "";
+}
+
+function prevMonth() {
+    calendarMonth--;
+    if (calendarMonth < 0) { calendarMonth = 11; calendarYear--; }
+    renderCalendar();
+}
+
+function nextMonth() {
+    calendarMonth++;
+    if (calendarMonth > 11) { calendarMonth = 0; calendarYear++; }
+    renderCalendar();
+}
+
+function openDayDetail(dateStr) {
+    // Find all entries for this date
+    const entries = workoutHistory.filter(e => e.date.startsWith(dateStr));
+
+    if (entries.length === 0) {
+        $("calendar-detail").innerHTML = `<p class="empty-msg">${t("noWorkoutsOnDay")}</p>`;
+        return;
+    }
+
+    let html = "";
+    entries.forEach(entry => {
+        html += `<div class="history-card glass">`;
+        html += `<div class="history-card-header">`;
+        html += `<span class="history-card-name">${escapeHtml(entry.workoutName)}</span>`;
+        html += `<button class="btn-icon btn-icon-danger history-delete-btn" data-history-id="${entry.id}" title="Delete">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                <path d="M10 11v6"></path><path d="M14 11v6"></path>
+                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+            </svg>
+        </button>`;
+        html += `</div>`;
+        html += `<div class="history-card-meta">`;
+        html += `<span>⏱ ${t("duration")}: ${formatTime(entry.durationSeconds)}</span>`;
+        const time = new Date(entry.date);
+        html += `<span>🕐 ${String(time.getHours()).padStart(2,"0")}:${String(time.getMinutes()).padStart(2,"0")}</span>`;
+        html += `</div>`;
+
+        // Exercise list
+        html += `<ul class="history-exercise-list">`;
+        entry.exercises.forEach((ex, idx) => {
+            html += `<li class="history-exercise-item">`;
+            html += `<span class="ex-color" style="background:${getColor(idx)}"></span>`;
+            html += `<span class="history-ex-name">${escapeHtml(ex.name)}</span>`;
+            html += `<span class="history-ex-meta">${ex.sets}× ${t("setLabel")} · ${ex.setDuration}s`;
+            if (ex.trackReps) html += ` · ${ex.reps} ${t("reps")}`;
+            html += `</span></li>`;
+        });
+        html += `</ul>`;
+
+        // Reps log
+        if (entry.repsLog && entry.repsLog.length > 0) {
+            html += `<div class="history-reps">`;
+            html += `<div class="reps-summary-title">${t("repsSummaryTitle")}</div>`;
+            html += `<ul class="reps-summary-list">`;
+            entry.repsLog.forEach(r => {
+                const isFull = r.repsActual >= r.repsTarget;
+                html += `<li class="reps-summary-item">
+                    <span class="reps-ex-name">${escapeHtml(r.exercise)}</span>
+                    <span class="reps-set-label">${t("setLabel")} ${r.set}</span>
+                    <span class="reps-result ${isFull ? "" : "partial"}">${r.repsActual}/${r.repsTarget}</span>
+                </li>`;
+            });
+            html += `</ul></div>`;
+        }
+        html += `</div>`;
+    });
+
+    $("calendar-detail").innerHTML = html;
+
+    // Attach delete listeners
+    $("calendar-detail").querySelectorAll(".history-delete-btn").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const hid = btn.dataset.historyId;
+            if (confirm(t("deleteHistoryConfirm"))) {
+                workoutHistory = workoutHistory.filter(h => h.id !== hid);
+                saveHistory();
+                openDayDetail(dateStr);
+                renderCalendar();
+            }
+        });
+    });
+}
+
+/* ═══════════════════════════════════════════
+   EVENT LISTENERS
+   ═══════════════════════════════════════════ */
 document.addEventListener("DOMContentLoaded", () => {
     loadWorkouts();
+    loadHistory();
     renderWorkouts();
     applyI18n();
 
@@ -571,6 +964,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Home – create new workout
     $("create-workout-btn").addEventListener("click", () => openEditor(null));
+
+    // Home – open calendar
+    $("calendar-btn").addEventListener("click", openCalendar);
+
+    // Calendar – back to home
+    $("calendar-back-btn").addEventListener("click", () => {
+        showScreen(homeScreen);
+    });
+
+    // Calendar – month navigation
+    $("calendar-prev").addEventListener("click", prevMonth);
+    $("calendar-next").addEventListener("click", nextMonth);
 
     // Editor – back to home
     $("editor-back-btn").addEventListener("click", () => {
@@ -606,6 +1011,14 @@ document.addEventListener("DOMContentLoaded", () => {
         if (e.key === "Escape") closeModal();
     });
 
+    // Track Reps toggle
+    $("ex-track-reps").addEventListener("change", updateRepsFieldVisibility);
+
+    // Reps confirmation dialog
+    $("reps-minus").addEventListener("click", () => adjustReps(-1));
+    $("reps-plus").addEventListener("click", () => adjustReps(1));
+    $("reps-confirm-btn").addEventListener("click", confirmReps);
+
     // Exercise list delegation
     exerciseList.addEventListener("click", (e) => {
         const btn = e.target.closest("button");
@@ -623,6 +1036,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // Timer controls
     $("pause-btn").addEventListener("click", togglePause);
     $("skip-btn").addEventListener("click", skipPhase);
+    $("rewind-btn").addEventListener("click", rewind10);
+    $("prev-exercise-btn").addEventListener("click", goToPrevExercise);
     $("timer-back-btn").addEventListener("click", goBackFromTimer);
 
     // Done screen
