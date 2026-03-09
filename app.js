@@ -41,6 +41,10 @@ const i18n = {
         repsConfirmTitle: "Reps Completed?",
         confirmFull: "Confirm",
         repsSummaryTitle: "Reps Summary",
+        trackWeight: "Track Weight",
+        weight: "Weight",
+        weightConfirmTitle: "Weight Used?",
+        weightSummaryTitle: "Weight Summary",
         rewind10: "−10s",
         prevExercise: "⏮ Previous Exercise",
         calendar: "Calendar",
@@ -63,6 +67,15 @@ const i18n = {
         importPreviewTitle: "Import Workouts",
         importConfirm: "Import",
         duplicateWarning: "(already exists)",
+        settings: "Settings",
+        settingsTitle: "Settings",
+        weightUnit: "Weight Unit",
+        defaultSets: "Default Sets",
+        defaultSetDuration: "Default Set Duration (sec)",
+        defaultRestDuration: "Default Rest Duration (sec)",
+        defaultReps: "Default Reps",
+        defaultWeight: "Default Weight",
+        settingsSaved: "Settings saved!",
         weekdaysShort: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
         monthNames: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
         setOf: (cur, total) => `Set ${cur}/${total}`,
@@ -112,6 +125,10 @@ const i18n = {
         repsConfirmTitle: "WDH geschafft?",
         confirmFull: "Bestätigen",
         repsSummaryTitle: "WDH Übersicht",
+        trackWeight: "Gewicht erfassen",
+        weight: "Gewicht",
+        weightConfirmTitle: "Gewicht verwendet?",
+        weightSummaryTitle: "Gewicht Übersicht",
         rewind10: "−10s",
         prevExercise: "⏮ Vorherige Übung",
         calendar: "Kalender",
@@ -134,6 +151,15 @@ const i18n = {
         importPreviewTitle: "Workouts importieren",
         importConfirm: "Importieren",
         duplicateWarning: "(existiert bereits)",
+        settings: "Einstellungen",
+        settingsTitle: "Einstellungen",
+        weightUnit: "Gewichtseinheit",
+        defaultSets: "Standard-Sätze",
+        defaultSetDuration: "Standard-Satzdauer (Sek.)",
+        defaultRestDuration: "Standard-Pausendauer (Sek.)",
+        defaultReps: "Standard-WDH",
+        defaultWeight: "Standard-Gewicht",
+        settingsSaved: "Einstellungen gespeichert!",
         weekdaysShort: ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"],
         monthNames: ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"],
         setOf: (cur, total) => `Satz ${cur}/${total}`,
@@ -201,6 +227,7 @@ const editorScreen = $("editor-screen");
 const timerScreen = $("timer-screen");
 const doneScreen = $("done-screen");
 const calendarScreen = $("calendar-screen");
+const settingsScreen = $("settings-screen");
 const workoutGrid = $("workout-grid");
 const noWorkoutsMsg = $("no-workouts-msg");
 const exerciseList = $("exercise-list");
@@ -213,7 +240,7 @@ const dayDetailModal = $("day-detail-modal");
    SCREEN NAVIGATION
    ═══════════════════════════════════════════ */
 function showScreen(screen) {
-    [homeScreen, editorScreen, timerScreen, doneScreen, calendarScreen].forEach((s) => s.classList.remove("active"));
+    [homeScreen, editorScreen, timerScreen, doneScreen, calendarScreen, settingsScreen].forEach((s) => s.classList.remove("active"));
     screen.classList.add("active");
     window.scrollTo(0, 0);
 }
@@ -234,6 +261,57 @@ function loadWorkouts() {
 
 function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
+
+/* ═══════════════════════════════════════════
+   APP SETTINGS
+   ═══════════════════════════════════════════ */
+const DEFAULT_SETTINGS = {
+    weightUnit: "kg",
+    defaultSets: 3,
+    defaultSetDuration: 40,
+    defaultRestDuration: 20,
+    defaultReps: 20,
+    defaultWeight: 20,
+};
+
+let appSettings = { ...DEFAULT_SETTINGS };
+
+function saveSettings() {
+    localStorage.setItem("fitSettings", JSON.stringify(appSettings));
+}
+
+function loadSettings() {
+    try {
+        const data = JSON.parse(localStorage.getItem("fitSettings"));
+        if (data && typeof data === "object") appSettings = { ...DEFAULT_SETTINGS, ...data };
+    } catch (_) { /* ignore */ }
+}
+
+function getWeightUnit() {
+    return appSettings.weightUnit || "kg";
+}
+
+function openSettings() {
+    $("settings-weight-unit").value = appSettings.weightUnit;
+    $("settings-default-sets").value = appSettings.defaultSets;
+    $("settings-default-set-duration").value = appSettings.defaultSetDuration;
+    $("settings-default-rest-duration").value = appSettings.defaultRestDuration;
+    $("settings-default-reps").value = appSettings.defaultReps;
+    $("settings-default-weight").value = appSettings.defaultWeight;
+    showScreen(settingsScreen);
+}
+
+function saveSettingsFromUI() {
+    appSettings.weightUnit = $("settings-weight-unit").value;
+    appSettings.defaultSets = Math.max(1, parseInt($("settings-default-sets").value) || 3);
+    appSettings.defaultSetDuration = Math.max(1, parseInt($("settings-default-set-duration").value) || 40);
+    appSettings.defaultRestDuration = Math.max(0, parseInt($("settings-default-rest-duration").value) || 20);
+    appSettings.defaultReps = Math.max(1, parseInt($("settings-default-reps").value) || 20);
+    appSettings.defaultWeight = Math.max(0, parseFloat($("settings-default-weight").value) || 20);
+    saveSettings();
+    renderWorkouts();
+    showScreen(homeScreen);
 }
 
 /* ═══════════════════════════════════════════
@@ -289,8 +367,11 @@ function saveToHistory() {
             restDuration: ex.restDuration,
             trackReps: ex.trackReps || false,
             reps: ex.reps || 0,
+            trackWeight: ex.trackWeight || false,
+            weight: ex.weight || 0,
         })),
         repsLog: [...repsLog],
+        weightLog: [...weightLog],
         durationSeconds: calcTotalDuration(currentWorkout.exercises),
     };
     workoutHistory.push(entry);
@@ -415,7 +496,7 @@ function renderExercises() {
       <div class="ex-color" style="background:${getColor(i)}"></div>
       <div class="ex-info">
         <div class="ex-name">${escapeHtml(ex.name)}</div>
-        <div class="ex-meta">${ex.sets || 1}× ${t("setLabel")}: ${ex.setDuration}s · ${t("restLabel")}: ${ex.restDuration}s${ex.trackReps ? ` · ${ex.reps} ${t("reps")}` : ""}</div>
+        <div class="ex-meta">${ex.sets || 1}× ${t("setLabel")}: ${ex.setDuration}s · ${t("restLabel")}: ${ex.restDuration}s${ex.trackReps ? ` · ${ex.reps} ${t("reps")}` : ""}${ex.trackWeight ? ` · ${ex.weight}${getWeightUnit()}` : ""}</div>
       </div>
       <div class="ex-actions">
         <button class="btn-edit" title="Edit" data-index="${i}">✏️</button>
@@ -458,24 +539,40 @@ function openModal(index = -1) {
         $("ex-set-duration").value = ex.setDuration;
         $("ex-rest-duration").value = ex.restDuration;
         $("ex-track-reps").checked = !!ex.trackReps;
-        $("ex-reps").value = ex.reps || 20;
+        $("ex-reps").value = ex.reps || appSettings.defaultReps;
+        $("ex-track-weight").checked = !!ex.trackWeight;
+        $("ex-weight").value = ex.weight || appSettings.defaultWeight;
         $("modal-title").textContent = t("editExercise");
     } else {
         $("ex-name").value = "";
-        $("ex-sets").value = 3;
-        $("ex-set-duration").value = 40;
-        $("ex-rest-duration").value = 20;
+        $("ex-sets").value = appSettings.defaultSets;
+        $("ex-set-duration").value = appSettings.defaultSetDuration;
+        $("ex-rest-duration").value = appSettings.defaultRestDuration;
         $("ex-track-reps").checked = false;
-        $("ex-reps").value = 20;
+        $("ex-reps").value = appSettings.defaultReps;
+        $("ex-track-weight").checked = false;
+        $("ex-weight").value = appSettings.defaultWeight;
         $("modal-title").textContent = t("addExercise");
     }
     updateRepsFieldVisibility();
+    updateWeightFieldVisibility();
+    updateWeightUnitLabel();
     modal.hidden = false;
     $("ex-name").focus();
 }
 
 function updateRepsFieldVisibility() {
     $("reps-field").style.display = $("ex-track-reps").checked ? "" : "none";
+}
+
+function updateWeightFieldVisibility() {
+    $("weight-field").style.display = $("ex-track-weight").checked ? "" : "none";
+}
+
+function updateWeightUnitLabel() {
+    document.querySelectorAll(".weight-unit-label").forEach(el => {
+        el.textContent = getWeightUnit();
+    });
 }
 
 function closeModal() {
@@ -491,8 +588,10 @@ function saveModal() {
     const restDur = Math.max(0, parseInt($("ex-rest-duration").value) || 0);
     const trackReps = $("ex-track-reps").checked;
     const reps = Math.max(1, parseInt($("ex-reps").value) || 20);
+    const trackWeight = $("ex-track-weight").checked;
+    const weight = Math.max(0, parseFloat($("ex-weight").value) || 0);
 
-    const exData = { name, sets, setDuration: setDur, restDuration: restDur, trackReps, reps };
+    const exData = { name, sets, setDuration: setDur, restDuration: restDur, trackReps, reps, trackWeight, weight };
     if (editingExIndex >= 0) {
         currentWorkout.exercises[editingExIndex] = exData;
     } else {
@@ -521,6 +620,11 @@ let repsLog = [];           // Array of { exercise, set, repsTarget, repsActual 
 let currentRepsCount = 0;   // Current value in the reps dialog
 let pendingRepsTarget = 0;  // Target reps for the current dialog
 
+// Weight tracking state
+let weightLog = [];         // Array of { exercise, set, weightTarget, weightActual, unit }
+let currentWeightValue = 0; // Current value in the weight dialog
+let pendingWeightTarget = 0; // Target weight for the current dialog
+
 function startWorkout() {
     if (currentWorkout.exercises.length === 0) {
         alert(t("exerciseRequired"));
@@ -536,6 +640,7 @@ function startWorkout() {
     currentPhase = "set";
     isPaused = false;
     repsLog = [];
+    weightLog = [];
     setPhaseTime(currentWorkout.exercises[0].setDuration);
 
     $("timer-workout-name").textContent = currentWorkout.name;
@@ -577,14 +682,13 @@ function advancePhase() {
     playBeep();
     const ex = currentWorkout.exercises[currentExIndex];
     if (currentPhase === "set") {
-        // If this exercise tracks reps, show the reps dialog before continuing
-        if (ex.trackReps) {
-            showRepsDialog(ex);
-            return; // Timer stays paused until user confirms reps
+        // Show combined confirmation dialog if reps or weight is tracked
+        if (ex.trackReps || ex.trackWeight) {
+            showSetConfirmDialog(ex);
+            return;
         }
         continueAfterSet();
     } else {
-        // rest just finished
         advanceSet();
     }
 }
@@ -600,21 +704,39 @@ function continueAfterSet() {
 }
 
 /* ═══════════════════════════════════════════
-   REPS DIALOG
+   COMBINED SET CONFIRMATION DIALOG
    ═══════════════════════════════════════════ */
-function showRepsDialog(ex) {
-    // Pause the timer
+function showSetConfirmDialog(ex) {
     clearInterval(timerInterval);
     timerInterval = null;
 
-    pendingRepsTarget = ex.reps || 20;
-    currentRepsCount = pendingRepsTarget; // Start at full reps
+    // Setup reps section
+    const repsSection = $("confirm-reps-section");
+    if (ex.trackReps) {
+        pendingRepsTarget = ex.reps || 20;
+        currentRepsCount = pendingRepsTarget;
+        $("reps-current").textContent = currentRepsCount;
+        $("reps-target").textContent = pendingRepsTarget;
+        repsSection.style.display = "";
+    } else {
+        repsSection.style.display = "none";
+    }
 
-    $("reps-modal-exercise").textContent = `${ex.name} — ${t("setOf")(currentSetNum, ex.sets || 1)}`;
-    $("reps-current").textContent = currentRepsCount;
-    $("reps-target").textContent = pendingRepsTarget;
-    $("reps-modal-title").textContent = t("repsConfirmTitle");
-    $("reps-confirm-btn").textContent = t("confirmFull");
+    // Setup weight section
+    const weightSection = $("confirm-weight-section");
+    if (ex.trackWeight) {
+        pendingWeightTarget = ex.weight || appSettings.defaultWeight;
+        currentWeightValue = pendingWeightTarget;
+        $("weight-current").textContent = currentWeightValue;
+        $("weight-target").textContent = pendingWeightTarget;
+        $("weight-unit-display").textContent = getWeightUnit();
+        weightSection.style.display = "";
+    } else {
+        weightSection.style.display = "none";
+    }
+
+    $("confirm-modal-exercise").textContent = `${ex.name} — ${t("setOf")(currentSetNum, ex.sets || 1)}`;
+    $("confirm-modal-btn").textContent = t("confirmFull");
 
     repsModal.hidden = false;
 }
@@ -624,22 +746,37 @@ function adjustReps(delta) {
     $("reps-current").textContent = currentRepsCount;
 }
 
-function confirmReps() {
+function adjustWeight(delta) {
+    currentWeightValue = Math.max(0, Math.round((currentWeightValue + delta) * 10) / 10);
+    $("weight-current").textContent = currentWeightValue;
+}
+
+function confirmSetDialog() {
     const ex = currentWorkout.exercises[currentExIndex];
-    repsLog.push({
-        exercise: ex.name,
-        set: currentSetNum,
-        repsTarget: pendingRepsTarget,
-        repsActual: currentRepsCount,
-    });
+
+    if (ex.trackReps) {
+        repsLog.push({
+            exercise: ex.name,
+            set: currentSetNum,
+            repsTarget: pendingRepsTarget,
+            repsActual: currentRepsCount,
+        });
+    }
+
+    if (ex.trackWeight) {
+        weightLog.push({
+            exercise: ex.name,
+            set: currentSetNum,
+            weightTarget: pendingWeightTarget,
+            weightActual: currentWeightValue,
+            unit: getWeightUnit(),
+        });
+    }
 
     repsModal.hidden = true;
 
-    // Continue the timer flow
     continueAfterSet();
     updateTimerUI();
-
-    // Restart the interval
     timerInterval = setInterval(tick, 1000);
 }
 
@@ -749,11 +886,12 @@ function togglePause() {
 function finishWorkout() {
     clearInterval(timerInterval);
     timerInterval = null;
-    repsModal.hidden = true; // ensure reps dialog is closed
+    repsModal.hidden = true;
     saveToHistory();
     const count = currentWorkout.exercises.length;
     $("done-summary").textContent = t("doneSummary")(count);
     renderRepsSummary();
+    renderWeightSummary();
     applyI18n();
     showScreen(doneScreen);
 }
@@ -771,6 +909,25 @@ function renderRepsSummary() {
             <span class="reps-ex-name">${escapeHtml(entry.exercise)}</span>
             <span class="reps-set-label">${t("setLabel")} ${entry.set}</span>
             <span class="reps-result ${isFull ? "" : "partial"}">${entry.repsActual}/${entry.repsTarget}</span>
+        </li>`;
+    });
+    html += `</ul>`;
+    container.innerHTML = html;
+}
+
+function renderWeightSummary() {
+    const container = $("weight-summary");
+    if (weightLog.length === 0) {
+        container.innerHTML = "";
+        return;
+    }
+    let html = `<div class="reps-summary-title">${t("weightSummaryTitle")}</div><ul class="reps-summary-list">`;
+    weightLog.forEach((entry) => {
+        const isFull = entry.weightActual >= entry.weightTarget;
+        html += `<li class="reps-summary-item">
+            <span class="reps-ex-name">${escapeHtml(entry.exercise)}</span>
+            <span class="reps-set-label">${t("setLabel")} ${entry.set}</span>
+            <span class="reps-result ${isFull ? "" : "partial"}">${entry.weightActual}/${entry.weightTarget}${entry.unit}</span>
         </li>`;
     });
     html += `</ul>`;
@@ -994,6 +1151,7 @@ function openDayDetail(dateStr) {
             html += `<span class="history-ex-name">${escapeHtml(ex.name)}</span>`;
             html += `<span class="history-ex-meta">${ex.sets}× ${t("setLabel")} · ${ex.setDuration}s`;
             if (ex.trackReps) html += ` · ${ex.reps} ${t("reps")}`;
+            if (ex.trackWeight) html += ` · ${ex.weight}${getWeightUnit()}`;
             html += `</span></li>`;
         });
         html += `</ul>`;
@@ -1089,6 +1247,8 @@ function exportSelectedWorkouts() {
             restDuration: ex.restDuration,
             trackReps: ex.trackReps || false,
             reps: ex.reps || 0,
+            trackWeight: ex.trackWeight || false,
+            weight: ex.weight || 0,
         })),
     }));
 
@@ -1201,6 +1361,7 @@ document.addEventListener("DOMContentLoaded", () => {
     loadWorkouts();
     loadHistory();
     loadLiked();
+    loadSettings();
     renderWorkouts();
     applyI18n();
 
@@ -1283,10 +1444,22 @@ document.addEventListener("DOMContentLoaded", () => {
     // Track Reps toggle
     $("ex-track-reps").addEventListener("change", updateRepsFieldVisibility);
 
-    // Reps confirmation dialog
+    // Track Weight toggle
+    $("ex-track-weight").addEventListener("change", updateWeightFieldVisibility);
+
+    // Combined set confirmation dialog
     $("reps-minus").addEventListener("click", () => adjustReps(-1));
     $("reps-plus").addEventListener("click", () => adjustReps(1));
-    $("reps-confirm-btn").addEventListener("click", confirmReps);
+    $("weight-minus").addEventListener("click", () => adjustWeight(-2.5));
+    $("weight-plus").addEventListener("click", () => adjustWeight(2.5));
+    $("confirm-modal-btn").addEventListener("click", confirmSetDialog);
+
+    // Settings
+    $("settings-btn").addEventListener("click", openSettings);
+    $("settings-back-btn").addEventListener("click", () => {
+        showScreen(homeScreen);
+    });
+    $("settings-save-btn").addEventListener("click", saveSettingsFromUI);
 
     // Exercise list delegation
     exerciseList.addEventListener("click", (e) => {

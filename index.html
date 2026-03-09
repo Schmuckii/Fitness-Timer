@@ -28,6 +28,9 @@
     <header class="app-header">
       <h1 class="logo">⏱ Fitness Timer</h1>
       <div class="header-actions">
+        <button id="settings-btn" class="btn-icon" title="Settings" aria-label="Settings">
+          <span>⚙️</span>
+        </button>
         <button id="import-btn" class="btn-icon" title="Import" aria-label="Import workouts">
           <span>📥</span>
         </button>
@@ -200,6 +203,18 @@
         <label for="ex-reps" data-i18n="reps">Reps</label>
         <input type="number" id="ex-reps" min="1" max="999" value="20" />
       </div>
+      <!-- Track Weight Toggle -->
+      <div class="modal-toggle-row" id="track-weight-row">
+        <label for="ex-track-weight" data-i18n="trackWeight">Track Weight</label>
+        <label class="toggle-switch">
+          <input type="checkbox" id="ex-track-weight" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="modal-field" id="weight-field" style="display:none">
+        <label for="ex-weight"><span data-i18n="weight">Weight</span> (<span class="weight-unit-label">kg</span>)</label>
+        <input type="number" id="ex-weight" min="0" max="999" step="0.5" value="20" />
+      </div>
       <div class="modal-actions">
         <button id="modal-cancel" class="btn btn-outline" data-i18n="cancel">Cancel</button>
         <button id="modal-save" class="btn btn-accent" data-i18n="save">Save</button>
@@ -207,21 +222,42 @@
     </div>
   </div>
 
-  <!-- ═══════════════ REPS CONFIRMATION MODAL ═══════════════ -->
+  <!-- ═══════════════ SET CONFIRMATION MODAL (Reps + Weight) ═══════════════ -->
   <div id="reps-modal" class="modal-overlay" hidden>
     <div class="modal glass reps-confirm-modal">
-      <h3 id="reps-modal-title" data-i18n="repsConfirmTitle">Reps Completed?</h3>
-      <p id="reps-modal-exercise" class="reps-exercise-name"></p>
-      <div class="reps-counter">
-        <button id="reps-minus" class="btn btn-reps-adjust">−</button>
-        <div class="reps-display">
-          <span id="reps-current" class="reps-current">20</span>
-          <span class="reps-separator">/</span>
-          <span id="reps-target" class="reps-target">20</span>
+      <h3 data-i18n="confirmFull">Confirm</h3>
+      <p id="confirm-modal-exercise" class="reps-exercise-name"></p>
+
+      <!-- Reps Section -->
+      <div id="confirm-reps-section" class="confirm-section">
+        <div class="confirm-section-label" data-i18n="reps">Reps</div>
+        <div class="reps-counter">
+          <button id="reps-minus" class="btn btn-reps-adjust">−</button>
+          <div class="reps-display">
+            <span id="reps-current" class="reps-current">20</span>
+            <span class="reps-separator">/</span>
+            <span id="reps-target" class="reps-target">20</span>
+          </div>
+          <button id="reps-plus" class="btn btn-reps-adjust">+</button>
         </div>
-        <button id="reps-plus" class="btn btn-reps-adjust">+</button>
       </div>
-      <button id="reps-confirm-btn" class="btn btn-start reps-confirm-btn" data-i18n="confirmFull">Confirm</button>
+
+      <!-- Weight Section -->
+      <div id="confirm-weight-section" class="confirm-section">
+        <div class="confirm-section-label" data-i18n="weight">Weight</div>
+        <div class="reps-counter">
+          <button id="weight-minus" class="btn btn-reps-adjust">−2.5</button>
+          <div class="reps-display">
+            <span id="weight-current" class="reps-current">20</span>
+            <span class="reps-separator">/</span>
+            <span id="weight-target" class="reps-target">20</span>
+            <span id="weight-unit-display" class="weight-unit-small">kg</span>
+          </div>
+          <button id="weight-plus" class="btn btn-reps-adjust">+2.5</button>
+        </div>
+      </div>
+
+      <button id="confirm-modal-btn" class="btn btn-start reps-confirm-btn" data-i18n="confirmFull">Confirm</button>
     </div>
   </div>
 
@@ -232,6 +268,7 @@
       <h2 data-i18n="workoutComplete">Workout Complete!</h2>
       <p id="done-summary" class="done-summary"></p>
       <div id="reps-summary" class="reps-summary"></div>
+      <div id="weight-summary" class="reps-summary"></div>
       <button id="done-btn" class="btn btn-start" data-i18n="backHome">Back to Home</button>
     </div>
   </div>
@@ -270,6 +307,60 @@
       <div id="calendar-grid" class="calendar-grid"></div>
 
       <div id="calendar-detail" class="calendar-detail"></div>
+    </main>
+  </div>
+
+  <!-- ═══════════════ SETTINGS SCREEN ═══════════════ -->
+  <div id="settings-screen" class="screen">
+    <header class="app-header">
+      <button id="settings-back-btn" class="btn-icon" title="Back">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
+      <h1 class="header-title" data-i18n="settingsTitle">Settings</h1>
+      <div style="width:40px"></div>
+    </header>
+
+    <main class="settings-content">
+      <section class="card glass">
+        <div class="settings-field">
+          <label for="settings-weight-unit" data-i18n="weightUnit">Weight Unit</label>
+          <select id="settings-weight-unit" class="settings-select">
+            <option value="kg">kg</option>
+            <option value="lbs">lbs</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="card glass">
+        <h2 data-i18n="settings">Defaults</h2>
+        <div class="settings-grid">
+          <div class="settings-field">
+            <label for="settings-default-sets" data-i18n="defaultSets">Default Sets</label>
+            <input type="number" id="settings-default-sets" min="1" max="99" value="3" />
+          </div>
+          <div class="settings-field">
+            <label for="settings-default-set-duration" data-i18n="defaultSetDuration">Default Set Duration (sec)</label>
+            <input type="number" id="settings-default-set-duration" min="1" max="600" value="40" />
+          </div>
+          <div class="settings-field">
+            <label for="settings-default-rest-duration" data-i18n="defaultRestDuration">Default Rest Duration (sec)</label>
+            <input type="number" id="settings-default-rest-duration" min="0" max="600" value="20" />
+          </div>
+          <div class="settings-field">
+            <label for="settings-default-reps" data-i18n="defaultReps">Default Reps</label>
+            <input type="number" id="settings-default-reps" min="1" max="999" value="20" />
+          </div>
+          <div class="settings-field">
+            <label for="settings-default-weight" data-i18n="defaultWeight">Default Weight</label>
+            <input type="number" id="settings-default-weight" min="0" max="999" step="0.5" value="20" />
+          </div>
+        </div>
+      </section>
+
+      <button id="settings-save-btn" class="btn btn-start" data-i18n="save">💾 Save</button>
     </main>
   </div>
 
